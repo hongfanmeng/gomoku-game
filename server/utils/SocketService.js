@@ -42,6 +42,7 @@ module.exports = function SocketService(socket, io) {
   socket.on("disconnect", () => {
     currentGame.gameOver = -1; //disconnectx
     let another = currentGame.getAnother(player);
+    //console.log(another);
     if (another) another.socket.emit("gameOver", -1);
   });
 };
