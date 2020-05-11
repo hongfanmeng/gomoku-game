@@ -56,12 +56,20 @@ class GoGame {
       player.socket.emit(eventName, content);
     });
   }
+  getPlayers() {
+    let players = [];
+    this.players.forEach((player) => {
+      players.push(player.nickname);
+    });
+    return players;
+  }
 }
 class Player {
   constructor(id, socket) {
     this.id = id;
     this.color = 0;
     this.socket = socket;
+    this.nickname = "";
   }
   setColor(color) {
     this.color = color;

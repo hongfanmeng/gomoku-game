@@ -1,19 +1,32 @@
 const { GoGame, Player } = require("./GoGame");
 let newGame;
-
+let players = {};
 module.exports = function SocketService(socket, io) {
   let id = socket.id;
   let player = new Player(id, socket);
   if (!newGame) newGame = new GoGame();
   if (newGame.gameOver != 0 || newGame.isFull()) newGame = new GoGame();
-
-  newGame.addPlayer(player);
-  socket.emit("color", player.color);
-  if (newGame.isFull()) {
-    newGame.emitAll("round", newGame.turn);
-  }
-
   let currentGame = newGame;
+
+  socket.on("nickname", (nickname) => {
+    if (!nickname || !nickname.length) {
+      socket.emit("color", -1); //invalid nickname
+      return;
+    }
+    if (players[nickname]) {
+      socket.emit("color", -2); //same nickname player online
+      return;
+    }
+    players[nickname] = 1;
+    player.nickname = nickname;
+    currentGame.addPlayer(player);
+    socket.emit("color", player.color);
+    if (currentGame.isFull()) {
+      socket.emit("nickname", currentGame.getAnother(player).nickname);
+      currentGame.getAnother(player).socket.emit("nickname", player.nickname);
+      currentGame.emitAll("round", currentGame.turn);
+    }
+  });
   socket.on("position", (data) => {
     data = {
       x: data.x,
@@ -41,6 +54,7 @@ module.exports = function SocketService(socket, io) {
 
   socket.on("disconnect", () => {
     currentGame.gameOver = -1; //disconnectx
+    if (player.nickname) players[player.nickname] = 0;
     let another = currentGame.getAnother(player);
     //console.log(another);
     if (another) another.socket.emit("gameOver", -1);
